@@ -40,6 +40,12 @@ public class MoneyController {
 	public Money reduceMoney(@RequestBody Money money) {
 		count20 = count20 - money.getCount20();
 		count50 = count50 - money.getCount50();
+		if (count20 < 0) {
+			count20 = 0;
+		}
+		if (count50 < 0) {
+			count50 = 0;
+		}
 		money = new Money(count20, count50);
 		return money;
 	}
@@ -56,7 +62,7 @@ public class MoneyController {
 			return money;
 		}
 
-		money = suggestDenomination(count20, count50, moneyRequested);
+		money = dispenseMoney(count20, count50, moneyRequested);
 		return money;
 	}
 
@@ -80,18 +86,51 @@ public class MoneyController {
 			withdrawalError.setCode(3000);
 			withdrawalError.setMessage("Negative amount withdrawl is not allowed");
 
-		} 
+		}
 		return withdrawalError;
 	}
 
-	public Money suggestDenomination(int count20, int count50, int moneyRequested) {
+	public Money dispenseMoney(int count20, int count50, int moneyRequested) {
+		WithdrawalError withdrawalError = null;
+		int dispensedCountFor50 = calculateCount(50, moneyRequested);
+		int remainderMoney = moneyRequested - dispensedCountFor50 * 50;
+		int dispensedCountFor20 = calculateCount(20, remainderMoney);
+		remainderMoney = remainderMoney - dispensedCountFor20 * 20;
 
-		int dispensedCountFor50 = moneyRequested / 50;
-			int remainingAfterDispensing50 = moneyRequested % 50;
-			int dispensedCountFor20 = remainingAfterDispensing50 / 20;
+		if (remainderMoney > 0) {
+			withdrawalError = new WithdrawalError();
+			withdrawalError.setCode(4000);
+			withdrawalError.setMessage("Please try withdrawl with different value");
+			dispensedCountFor50 = 0;
+			dispensedCountFor20 = 0;
+		} else {
 			this.count50 = this.count50 - dispensedCountFor50;
 			this.count20 = this.count20 - dispensedCountFor20;
-			Money money = new Money(dispensedCountFor20, dispensedCountFor50);
-			return money;
+		}
+
+		Money money = new Money(dispensedCountFor20, dispensedCountFor50);
+		money.setError(withdrawalError);
+		return money;
+
+	}
+
+	private int calculateCount(int denomination, int moneyRequested) {
+		if (denomination == 50) {
+			int count = moneyRequested / denomination;
+			if (count < this.count50) {
+				return count;
+			} else if (count >= this.count50) {
+				return this.count50;
+			}
+		}
+		if (denomination == 20) {
+			int count = moneyRequested / denomination;
+			if (count < this.count20) {
+				return count;
+			} else if (count >= this.count20) {
+				return this.count20;
+			}
+		}
+		return 0;
 	}
 }
