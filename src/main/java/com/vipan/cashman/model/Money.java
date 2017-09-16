@@ -1,4 +1,4 @@
-package hello;
+package com.vipan.cashman.model;
 
 public class Money {
 
