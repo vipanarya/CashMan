@@ -64,7 +64,7 @@ public class MoneyController {
 					break;
 				}
 			}
-			if(!matched) {
+			if (!matched) {
 				Money money = new Money();
 				money.setCount(count);
 				money.setDenomination(denomination);
@@ -95,26 +95,59 @@ public class MoneyController {
 
 		int totalMoneyInATM = this.compositeMoney.getTotalMoney();
 
+		WithdrawalError withdrawalError = validateWithdrawl(moneyRequested, this.compositeMoney);
+
+		if (null != withdrawalError) {
+			money.setError(withdrawalError);
+			money.setTotalMoney(0);
+			return money;
+		}
 		ArrayList<Money> moneyToBeDispensed = new ArrayList<Money>();
 
 		for (int i = 0; i < this.compositeMoney.getMoneyInATM().size(); i++) {
 			Money moneyTemp = new Money();
 			int denominationTemp = this.compositeMoney.getMoneyInATM().get(i).getDenomination();
 			moneyTemp.setDenomination(denominationTemp);
-			if (i > 0) {
-				moneyRequested = moneyRequested
-						- moneyToBeDispensed.get(i - 1).getDenomination() * moneyToBeDispensed.get(i - 1).getCount();
-			}
 			System.out.println("Money Requested ::::: " + moneyRequested);
 			int countTemp = calculateCount(denominationTemp, moneyRequested, i);
 
 			moneyTemp.setCount(countTemp);
 			moneyToBeDispensed.add(moneyTemp);
+			moneyRequested = moneyRequested
+					- moneyToBeDispensed.get(i).getDenomination() * moneyToBeDispensed.get(i).getCount();
 
 		}
+		if (moneyRequested > 0) {
+			withdrawalError = new WithdrawalError();
+			withdrawalError.setCode(3000);
+			withdrawalError
+					.setMessage("Please try another withdraw, denominations are not supporting current withdrawal");
+			money.setError(withdrawalError);
+			money.setTotalMoney(0);
+			return money;
+		}
+
+		System.out.println(moneyToBeDispensed);
 		money.setMoneyInATM(moneyToBeDispensed);
 		reduceMoneyInATM(this.compositeMoney.getMoneyInATM(), moneyToBeDispensed);
+
 		return money;
+	}
+
+	private WithdrawalError validateWithdrawl(int moneyRequested, CompositeMoney compositeMoney) {
+		WithdrawalError withdrawalError = null;
+
+		if (moneyRequested > compositeMoney.getTotalMoney()) {
+			withdrawalError = new WithdrawalError();
+			withdrawalError.setCode(1000);
+			withdrawalError.setMessage("Do not have enough money in machine");
+		} else if (moneyRequested < 0) {
+			withdrawalError = new WithdrawalError();
+			withdrawalError.setCode(2000);
+			withdrawalError.setMessage("Negative amount withdrawl is not allowed");
+
+		}
+		return withdrawalError;
 	}
 
 	private void reduceMoneyInATM(ArrayList<Money> moneyInATM, ArrayList<Money> moneyToBeDispensed) {
