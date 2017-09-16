@@ -1,5 +1,9 @@
 package hello;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,127 +13,128 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class MoneyController {
 
-	private int count20;
-
-	private int count50;
+	@Autowired
+	private CompositeMoney compositeMoney;
 
 	@RequestMapping(value = "/initializeMoney", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public Money initializeMoney(@RequestBody Money money) {
-		System.out.println(money);
-		count20 = money.getCount20();
-		count50 = money.getCount50();
-		money = new Money(count20, count50);
-		return money;
+	public CompositeMoney initializeMoney(@RequestBody Money[] moneyArray) {
+		ArrayList<Money> moneyInATM = new ArrayList<Money>();
+		for (Money money : moneyArray) {
+			moneyInATM.add(money);
+		}
+		moneyInATM.sort((i, j) -> (j.getDenomination() - i.getDenomination()));
+		compositeMoney.setMoneyInATM(moneyInATM);
+		return compositeMoney;
 	}
 
 	@RequestMapping(value = "/money", produces = MediaType.APPLICATION_JSON_VALUE)
-	public Money money() {
-		Money money = new Money(count20, count50);
-		return money;
+	public CompositeMoney money() {
+		return this.compositeMoney;
 	}
 
 	@RequestMapping(value = "/addMoney", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public Money addMoney(@RequestBody Money money) {
-		count20 = count20 + money.getCount20();
-		count50 = count50 + money.getCount50();
-		money = new Money(count20, count50);
-		return money;
+	public CompositeMoney addMoney(@RequestBody Money[] moneyArray) {
+		ArrayList<Money> additionalMoney = new ArrayList<Money>();
+		for (Money money : moneyArray) {
+			additionalMoney.add(money);
+		}
+		additionalMoney.sort((i, j) -> (j.getDenomination() - i.getDenomination()));
+		ArrayList<Money> newMoneyList = addMoreMoneyToExistingMoney(this.compositeMoney.getMoneyInATM(),
+				additionalMoney);
+		compositeMoney.setMoneyInATM(newMoneyList);
+		return compositeMoney;
 	}
 
-	@RequestMapping(value = "/reduceMoney", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public Money reduceMoney(@RequestBody Money money) {
-		count20 = count20 - money.getCount20();
-		count50 = count50 - money.getCount50();
-		if (count20 < 0) {
-			count20 = 0;
+	private ArrayList<Money> addMoreMoneyToExistingMoney(ArrayList<Money> moneyInATM,
+			ArrayList<Money> additionalMoney) {
+		System.out.println(moneyInATM);
+		System.out.println(additionalMoney);
+		ArrayList<Money> newDenominationsAddedList = new ArrayList<Money>();
+		for (int i = 0; i < additionalMoney.size(); i++) {
+			int denomination = additionalMoney.get(i).getDenomination();
+			int count = additionalMoney.get(i).getCount();
+			boolean matched = false;
+			for (int j = 0; j < moneyInATM.size(); j++) {
+				if (denomination == moneyInATM.get(j).getDenomination()) {
+					matched = true;
+					System.out.println("Denomination Matched");
+					int existingCount = moneyInATM.get(j).getCount();
+					moneyInATM.get(j).setCount(existingCount + count);
+					System.out.println("Incremented Count");
+					break;
+				}
+			}
+			if(!matched) {
+				Money money = new Money();
+				money.setCount(count);
+				money.setDenomination(denomination);
+				newDenominationsAddedList.add(money);
+			}
 		}
-		if (count50 < 0) {
-			count50 = 0;
-		}
-		money = new Money(count20, count50);
-		return money;
+		// combine two lists
+		ArrayList<Money> combinedList = new ArrayList<Money>();
+		combinedList.addAll(moneyInATM);
+		combinedList.addAll(newDenominationsAddedList);
+		combinedList.sort((i, j) -> (j.getDenomination() - i.getDenomination()));
+		return combinedList;
 	}
 
 	@RequestMapping(value = "/withdrawMoney", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public Money withdrawMoney(@RequestBody Money money) {
+	public CompositeMoney withdrawMoney(@RequestBody CompositeMoney money) {
 		int moneyRequested = money.getTotalMoney();
 
-		WithdrawalError error = validateWithdrawl(count20, count50, moneyRequested);
+		/*
+		 * ArrayList<Money> moneyInATMStream = (ArrayList<Money>)
+		 * this.compositeMoney.getMoneyInATM().parallelStream() .sorted((i, j)
+		 * -> (j.getDenomination() -
+		 * i.getDenomination())).collect(Collectors.toList());
+		 * moneyInATMStream.forEach(System.out::println);
+		 */
+		this.compositeMoney.getMoneyInATM().sort((i, j) -> (j.getDenomination() - i.getDenomination()));
+		this.compositeMoney.getMoneyInATM().forEach(System.out::println);
 
-		if (null != error) {
-			money.setError(error);
-			money.setTotalMoney(0);
-			return money;
+		int totalMoneyInATM = this.compositeMoney.getTotalMoney();
+
+		ArrayList<Money> moneyToBeDispensed = new ArrayList<Money>();
+
+		for (int i = 0; i < this.compositeMoney.getMoneyInATM().size(); i++) {
+			Money moneyTemp = new Money();
+			int denominationTemp = this.compositeMoney.getMoneyInATM().get(i).getDenomination();
+			moneyTemp.setDenomination(denominationTemp);
+			if (i > 0) {
+				moneyRequested = moneyRequested
+						- moneyToBeDispensed.get(i - 1).getDenomination() * moneyToBeDispensed.get(i - 1).getCount();
+			}
+			System.out.println("Money Requested ::::: " + moneyRequested);
+			int countTemp = calculateCount(denominationTemp, moneyRequested, i);
+
+			moneyTemp.setCount(countTemp);
+			moneyToBeDispensed.add(moneyTemp);
+
 		}
-
-		money = dispenseMoney(count20, count50, moneyRequested);
+		money.setMoneyInATM(moneyToBeDispensed);
+		reduceMoneyInATM(this.compositeMoney.getMoneyInATM(), moneyToBeDispensed);
 		return money;
 	}
 
-	public WithdrawalError validateWithdrawl(int count20, int count50, int moneyRequested) {
-
-		WithdrawalError withdrawalError = null;
-
-		int totalRemainingMoney = 20 * count20 + 50 * count50;
-
-		if (moneyRequested > totalRemainingMoney) {
-			withdrawalError = new WithdrawalError();
-			withdrawalError.setCode(1000);
-			withdrawalError.setMessage("Do not have enough money in machine");
-		} else if (moneyRequested % 50 != 0 && moneyRequested % 20 != 0 && moneyRequested % 70 != 0) {
-			withdrawalError = new WithdrawalError();
-			withdrawalError.setCode(2000);
-			withdrawalError.setMessage("Cannot Dispense due to Denominations not available");
-
-		} else if (moneyRequested < 0) {
-			withdrawalError = new WithdrawalError();
-			withdrawalError.setCode(3000);
-			withdrawalError.setMessage("Negative amount withdrawl is not allowed");
-
+	private void reduceMoneyInATM(ArrayList<Money> moneyInATM, ArrayList<Money> moneyToBeDispensed) {
+		ArrayList<Money> newMoneyInATM = new ArrayList<Money>();
+		for (int i = 0; i < this.compositeMoney.getMoneyInATM().size(); i++) {
+			Money newMoney = new Money();
+			newMoney.setCount(
+					this.compositeMoney.getMoneyInATM().get(i).getCount() - moneyToBeDispensed.get(i).getCount());
+			newMoney.setDenomination(moneyToBeDispensed.get(i).getDenomination());
+			newMoneyInATM.add(newMoney);
 		}
-		return withdrawalError;
+		this.compositeMoney.setMoneyInATM(newMoneyInATM);
 	}
 
-	public Money dispenseMoney(int count20, int count50, int moneyRequested) {
-		WithdrawalError withdrawalError = null;
-		int dispensedCountFor50 = calculateCount(50, moneyRequested);
-		int remainderMoney = moneyRequested - dispensedCountFor50 * 50;
-		int dispensedCountFor20 = calculateCount(20, remainderMoney);
-		remainderMoney = remainderMoney - dispensedCountFor20 * 20;
-
-		if (remainderMoney > 0) {
-			withdrawalError = new WithdrawalError();
-			withdrawalError.setCode(4000);
-			withdrawalError.setMessage("Please try withdrawl with different value");
-			dispensedCountFor50 = 0;
-			dispensedCountFor20 = 0;
-		} else {
-			this.count50 = this.count50 - dispensedCountFor50;
-			this.count20 = this.count20 - dispensedCountFor20;
-		}
-
-		Money money = new Money(dispensedCountFor20, dispensedCountFor50);
-		money.setError(withdrawalError);
-		return money;
-
-	}
-
-	private int calculateCount(int denomination, int moneyRequested) {
-		if (denomination == 50) {
-			int count = moneyRequested / denomination;
-			if (count < this.count50) {
-				return count;
-			} else if (count >= this.count50) {
-				return this.count50;
-			}
-		}
-		if (denomination == 20) {
-			int count = moneyRequested / denomination;
-			if (count < this.count20) {
-				return count;
-			} else if (count >= this.count20) {
-				return this.count20;
-			}
+	private int calculateCount(int denomination, int moneyRequested, int index) {
+		int count = moneyRequested / denomination;
+		if (count < this.compositeMoney.getMoneyInATM().get(index).getCount()) {
+			return count;
+		} else if (count >= this.compositeMoney.getMoneyInATM().get(index).getCount()) {
+			return this.compositeMoney.getMoneyInATM().get(index).getCount();
 		}
 		return 0;
 	}
