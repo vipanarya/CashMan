@@ -1,0 +1,82 @@
+{
+	"variables": [],
+	"info": {
+		"name": "CashMan",
+		"_postman_id": "3d23c5f5-c8ab-cdd5-53ce-6ab766084511",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Initialize Money",
+			"request": {
+				"url": "http://localhost:8080/initializeMoney",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[  \r\n   {  \r\n      \"denomination\":10,\r\n      \"count\":2\r\n   },\r\n   {  \r\n      \"denomination\":50,\r\n      \"count\":2\r\n   },\r\n   {  \r\n      \"denomination\":20,\r\n      \"count\":2\r\n   }\r\n]"
+				},
+				"description": "Initiaze the ATM with different denomination s and count."
+			},
+			"response": []
+		},
+		{
+			"name": "Add Money",
+			"request": {
+				"url": "http://localhost:8080/addMoney",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[  \r\n   {  \r\n      \"denomination\":10,\r\n      \"count\":2\r\n   },\r\n   {  \r\n      \"denomination\":5,\r\n      \"count\":2\r\n   },\r\n   {  \r\n      \"denomination\":50,\r\n      \"count\":2\r\n   },\r\n   {  \r\n      \"denomination\":20,\r\n      \"count\":2\r\n   }\r\n]"
+				},
+				"description": "Add money to the existing money. New Denominations can be added too."
+			},
+			"response": []
+		},
+		{
+			"name": "Withdraw Money",
+			"request": {
+				"url": "http://localhost:8080/withdrawMoney",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\"totalMoney\":\"100\"\n}"
+				},
+				"description": "The withdrawl happens with trial of highest denomination"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Current State of Money",
+			"request": {
+				"url": "http://localhost:8080/money",
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"description": "This will show the current money present in the ATM machine"
+			},
+			"response": []
+		}
+	]
+}
