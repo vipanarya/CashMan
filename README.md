@@ -1,4 +1,4 @@
-# CashMan
+# CashMan <image height="30" width="30" src="cashman.png">
 
 CashMan Application which is kind of a restful microservice. It emulates the behaviour of the ATM machine. Operator fills the machine by calling Initialize Money api, Add money api and user uses the api's such as Get Money and Withdraw Money api.
 
