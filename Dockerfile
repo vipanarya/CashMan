@@ -11,4 +11,4 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 #CMD ["/entrypoint.sh"]
 
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["sh", "entrypoint.sh"]
