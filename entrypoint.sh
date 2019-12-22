@@ -1,4 +1,4 @@
-export JAVA_AGENT="-javaagent:newrelic-agent.jar"
+export JAVA_AGENT="-javaagent:newrelic.jar"
 
 curl -o newrelic.jar https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic.jar
 curl -o newrelic.yml https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic.yml
