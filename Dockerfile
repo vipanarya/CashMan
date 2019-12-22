@@ -8,5 +8,5 @@ COPY ./target/cashman-rest-service-0.1.0.jar cashman-rest-service-0.1.0.jar
 COPY ./entrypoint.sh .
 
 RUN chmod +x entrypoint.sh
-RUN bash -c 'touch cashman-rest-service-0.1.0.jar'
+
 CMD ["/entrypoint.sh"]
