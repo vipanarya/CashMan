@@ -8,7 +8,7 @@ RUN curl -o newrelic.jar https://download.newrelic.com/newrelic/java-agent/newre
 RUN curl -o newrelic.yml https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic.yml
 
 COPY ./target/cashman-rest-service-0.1.0.jar cashman-rest-service-0.1.0.jar
-ADD src/main/docker/entrypoint.sh .
+ADD entrypoint.sh .
 
 RUN chmod +x entrypoint.sh
 RUN bash -c 'touch cashman-rest-service-0.1.0.jar'
